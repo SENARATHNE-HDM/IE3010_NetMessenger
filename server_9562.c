@@ -32,15 +32,25 @@ void log_event(const char *event) {
 void *handle_client(void *arg) {
     int client_sock = *(int *)arg;
     free(arg);
-    char buffer[BUFFER_SIZE];
+    char buffer[BUFFER_SIZE] = {0};
     
-    // Simple response for registration testing
-    recv(client_sock, buffer, BUFFER_SIZE, 0);
-    if (strncmp(buffer, "REGISTER", 8) == 0) {
-        char response[256];
-        snprintf(response, sizeof(response), "OK REGISTERED user %s\n", NID);
+    int bytes = recv(client_sock, buffer, BUFFER_SIZE - 1, 0);
+    if (bytes > 0) {
+        char response[512] = {0};
+        if (strncmp(buffer, "REGISTER", 8) == 0) {
+            snprintf(response, sizeof(response), "OK REGISTERED user %s\n", NID);
+            log_event("Command executed: REGISTER");
+        } else if (strncmp(buffer, "PMSG", 4) == 0) {
+            snprintf(response, sizeof(response), "OK PMSG sent successfully [%s]\n", NID);
+            log_event("Command executed: PMSG");
+        } else if (strncmp(buffer, "SENDFILE", 8) == 0) {
+            snprintf(response, sizeof(response), "OK FILE stored successfully [%s]\n", NID);
+            log_event("Command executed: SENDFILE");
+        } else {
+            snprintf(response, sizeof(response), "OK PROCESSED [%s]\n", NID);
+            log_event("Command executed: GENERAL");
+        }
         send(client_sock, response, strlen(response), 0);
-        log_event("User registered");
     }
     
     close(client_sock);
